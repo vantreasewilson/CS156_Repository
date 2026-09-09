@@ -1,0 +1,24 @@
+# Standard scientific Python imports
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Import datasets, classifiers and performance metrics
+from sklearn import datasets, metrics, svm
+from sklearn.model_selection import train_test_split
+
+
+#these images are "handwritten" numbers reduced to a low number of pixels
+digits = datasets.load_digits(as_frame = True)
+
+digits_df = digits.frame
+
+digits_df = digits_df[(digits_df["target"] == 8) | (digits_df["target"] == 3)]
+
+#the images displayed by this block of code are stored as vectors with each dimension corresponding to a numerical value representing a tone in gray scale. 
+_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3)) #setting the size and number of plots
+for ax, image, label in zip(axes, digits.images, digits.target): #look at each row containing the info for a digit
+    ax.set_axis_off() #removes the x y axis from the images
+    ax.imshow(image, cmap=plt.cm.gray_r) #function that shows image mapping the pixel values to gray scale
+    ax.set_title("Training: %i" % label) #displays image title
+
+digits_df.head(5)
