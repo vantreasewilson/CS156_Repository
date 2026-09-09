@@ -1,0 +1,15 @@
+#load relevant libraries
+from sklearn.datasets import load_iris
+import pandas as pd
+import seaborn as sns
+
+#Iris is a type of flower that can be distinguished by the dimensions of their petals and sepals, a small leaf like part of the flower with more pronounced vienes and often different coloring from the traditional petals.
+
+#Load the iris data set and convert it to a pandas dataframe object
+iris = load_iris(as_frame=True)
+iris_df = iris.frame
+
+#The sepal length is the base of the sepal to the top, farthest from the center of the flower in cenimerters as defined by the data set. Select the sepal length column and only keep the entires that are length 5 or less. This filtering limits the remaining data points.
+iris_df = iris_df[iris_df["sepal length (cm)"]<=5] # https://stackoverflow.com/questions/41800424/remove-rows-in-python-less-than-a-certain-value
+
+sns.scatterplot(iris_df["petal length (cm)"], iris_df["sepal length (cm)"], hue=iris_df["target"]) 
