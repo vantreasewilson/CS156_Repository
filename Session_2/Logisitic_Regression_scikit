@@ -1,0 +1,67 @@
+#logistic regression here
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
+
+from sklearn.datasets import load_digits
+
+def load_small_digits(test_size=0.2, random_state=42):
+    
+    """
+    Loads the small built-in digits dataset (8x8 images, ~1800 samples).
+    Good lightweight substitute for MNIST when memory/download is an issue.
+    """
+    data = load_digits()
+    X, y = data.data / 16.0, data.target  # normalize pixel range (0-16 -> 0-1)
+    return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
+
+def fit_naive_bayes(X_train, y_train):
+    
+    """
+    Fits a Gaussian Naive Bayes classifier.
+    """
+    model = GaussianNB()
+    model.fit(X_train, y_train)
+    return model
+
+
+def evaluate_classifier(model, X_test, y_test, class_names=None):
+    """
+    Computes accuracy, F1 (macro), full classification report,
+    and plots a confusion matrix.
+    """
+    y_pred = model.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    f1_macro = f1_score(y_test, y_pred, average="macro")
+    f1_weighted = f1_score(y_test, y_pred, average="weighted")
+
+    print(f"Accuracy:        {acc:.4f}")
+    print(f"F1 (macro):      {f1_macro:.4f}")
+    print(f"F1 (weighted):   {f1_weighted:.4f}\n")
+    print("Classification report:")
+    print(classification_report(y_test, y_pred, target_names=class_names))
+
+    cm = confusion_matrix(y_test, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names or np.unique(y_test))
+    fig, ax = plt.subplots(figsize=(7, 7))
+    disp.plot(ax=ax, cmap="coolwarm")
+    ax.set_title("Naive Bayes Confusion Matrix (MNIST)")
+    plt.show()
+
+    return {"accuracy": acc, "f1_macro": f1_macro, "f1_weighted": f1_weighted, "confusion_matrix": cm}
+
+
+X_train, X_test, y_train, y_test = load_small_digits()  # subsample for speed
+model = fit_naive_bayes(X_train, y_train)
+metrics = evaluate_classifier(model, X_test, y_test)
