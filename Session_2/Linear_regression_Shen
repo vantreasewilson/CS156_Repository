@@ -1,0 +1,107 @@
+#Linear Regression here
+#code adapted from  Shen D (2020) Linear Regression using Iris Dataset — ‘Hello, World!’ of Machine Learning. Medium. https://medium.com/analytics-vidhya/linear-regression-using-iris-dataset-hello-world-of-machine-learning-b0feecac9cc1
+# Import Dataset from sklearn
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import pandas as pd
+import seaborn as sns
+import random
+import numpy as np
+import sklearn
+import matplotlib.pyplot as plt
+
+
+# Load Iris Data
+iris = load_iris()
+
+# Creating pd DataFrames
+iris_df = pd.DataFrame(data= iris.data, columns= iris.feature_names)
+target_df = pd.DataFrame(data= iris.target, columns= ['species'])
+
+#make add columns for iris data to include the species rather than just the numerical code
+def converter(specie):
+    if specie == 0:
+        return 'setosa'
+    elif specie == 1:
+        return 'versicolor'
+    else:
+        return 'virginica'
+
+target_df['species'] = target_df['species'].apply(converter)
+
+
+# Concatenate the DataFrames
+iris_df = pd.concat([iris_df, target_df], axis= 1)
+
+# Converting Objects to Numerical dtype
+iris_df.drop('species', axis= 1, inplace= True)
+target_df = pd.DataFrame(columns= ['species'], data= iris.target)
+iris_df = pd.concat([iris_df, target_df], axis= 1)
+# Variables
+X= iris_df.drop(labels= 'sepal length (cm)', axis= 1)
+y= iris_df['sepal length (cm)']
+
+
+# Splitting the Dataset 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= 0.33)
+
+# Instantiating LinearRegression() Model
+lr = LinearRegression()
+
+# Training/Fitting the Model
+lr.fit(X_train, y_train)
+
+# Making Predictions
+lr.predict(X_test)
+pred = lr.predict(X_test)
+
+# Evaluating Model's Performance
+print('Mean Absolute Error:',sklearn.metrics.mean_absolute_error(y_test, pred))
+print('Mean Squared Error:',sklearn.metrics.mean_squared_error(y_test, pred))
+print('Mean Root Squared Error:', np.sqrt(sklearn.metrics.mean_squared_error(y_test, pred)))
+
+#Plot Actual vs. Predicted & Residuals
+#sns.set_theme(style='whitegrid', palette='colorblind')
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
+#fig.suptitle('Multiple Linear Regression Performance on Iris Sepal Length', fontsize=15, fontweight='bold')
+
+# Plot 1: Actual vs. Predicted
+sns.scatterplot(x=pred, y=y_test, ax=ax1, s=70, color='#1f77b4', edgecolor='k', alpha=0.8)
+min_val, max_val = min(y_test.min(), pred.min()) - 0.2, max(y_test.max(), pred.max()) + 0.2
+
+ax1.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Perfect Fit Line (y = x)')
+
+ax1.set_title('Actual vs. Predicted Sepal Length', fontsize=12, fontweight='bold')
+ax1.set_xlabel('Predicted Sepal Length (cm)', fontsize=11)
+ax1.set_ylabel('Actual Sepal Length (cm)', fontsize=11)
+ax1.set_xlim(min_val, max_val)
+ax1.set_ylim(min_val, max_val)
+ax1.legend(loc='upper left')
+
+# Plot 2: Residuals Plot
+residuals = y_test - pred
+sns.scatterplot(x=pred, y=residuals, ax=ax2, s=70, color='#2ca02c', edgecolor='k', alpha=0.8)
+ax2.axhline(0, color='red', linestyle='--', linewidth=2)
+
+ax2.set_title('Residuals vs. Predicted Values', fontsize=12, fontweight='bold')
+ax2.set_xlabel('Predicted Sepal Length (cm)', fontsize=11)
+ax2.set_ylabel('Residuals (Actual - Predicted) [cm]', fontsize=11)
+
+sns.despine()
+plt.tight_layout(pad=1.5)
+plt.show()
+
+def plot_residual_histogram(residuals):
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.hist(residuals, bins=15, color="#2ca02c", edgecolor="black", alpha=0.8)
+    ax.axvline(0, color="red", linestyle="--", linewidth=2)
+    ax.set_title("Distribution of Residuals")
+    ax.set_xlabel("Residual (Actual - Predicted)")
+    ax.set_ylabel("Count")
+    plt.show()
+
+#residuals defined in code cell 1 for the iris data 
+print("Iris dataset residuals")
+plot_residual_histogram(residuals)
