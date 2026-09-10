@@ -1,0 +1,182 @@
+#linear regression from scratch
+#this is not totally complete because it doesnt include the p value calculation but gets a solid start at calculating R^2 from scratch and ploting it adapted from FA code in combination with the training and testing feature of machine learning.
+
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from scipy import stats
+import seaborn as sns 
+
+
+
+# Set up the data set for training and testing as shown above
+iris = load_iris()
+
+# Creating pd DataFrames
+iris_df = pd.DataFrame(data= iris.data, columns= iris.feature_names)
+target_df = pd.DataFrame(data= iris.target, columns= ['species'])
+
+#make add columns for iris data to include the species rather than just the numerical code
+def converter(specie):
+    if specie == 0:
+        return 'setosa'
+    elif specie == 1:
+        return 'versicolor'
+    else:
+        return 'virginica'
+
+target_df['species'] = target_df['species'].apply(converter)
+
+
+# Concatenate the DataFrames
+iris_df = pd.concat([iris_df, target_df], axis= 1)
+
+# Converting Objects to Numerical dtype
+iris_df.drop('species', axis= 1, inplace= True)
+target_df = pd.DataFrame(columns= ['species'], data= iris.target)
+iris_df = pd.concat([iris_df, target_df], axis= 1)
+# Variables
+X= iris_df.drop(labels= 'sepal length (cm)', axis= 1)
+y= iris_df['sepal length (cm)']
+
+
+# Splitting the Dataset 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= 0.33)
+
+
+def remove_non_int(data):
+    #removes any non int data from that dataset which isn't a problem in for this data set but makes the fucntions more robust
+    temp_data = []
+    for val in data:
+        if type(val) == int or type(val) == float: 
+            temp_data.append(val)
+    return temp_data 
+
+def my_sample_SD(data):
+    #find sample standard deviation of a given list
+
+    data = remove_non_int(data)
+    sum_of_squares = 0 
+    n = len(data)
+    if n == 0: 
+        return "This data set has no numerical values" 
+    
+    if n == 1:
+        return 0
+    
+    mean = np.mean(data)
+    
+    for element in data:
+        sum_of_squares += (element - mean)**2
+    return (sum_of_squares/(n-1))**0.5 #Divides by n-1 since is is the sample not pop SD so is systematically smaller.
+
+
+def find_r(col1, col2): 
+    #takes two lists of values as inputs and then applies Pearson's r formula to calculate the r value. It also returns the number of data points as is important for some of the subsequent functions that call this one. Employes Eq. A.1
+
+    x = col1
+    y = col2
+    
+    length = len(x)
+
+    #x SD
+    x_mean = np.mean(x)
+    x_sd = my_sample_SD(x)
+    standard_x = []
+    for val in x:
+        #print(val, x_mean)
+        temp = (val-x_mean)/x_sd
+        standard_x.append(temp)
+
+    #y SD
+    y_mean = np.mean(y)
+    y_sd = my_sample_SD(y)
+    
+    standard_y = []
+    for val in y:
+        temp = (val-y_mean)/y_sd
+        standard_y.append(temp)
+
+    #taking sum of z scores to get r
+    sums = []
+    for i in range(length):
+        sums.append(standard_y[i]*standard_x[i])
+        
+
+    r = sum(sums)/(length-1)
+    return r, length
+
+def find_slope(col1, col2):
+    #this matches the results from the stats.linregress function but computes b1 using the formula. Employes Eq. A.2
+    
+    x = col1
+    y = col2
+    
+    x_sd = my_sample_SD(x)
+    y_sd = my_sample_SD(y)
+    r,n = find_r(x,y)
+    
+    return (y_sd/x_sd)*r
+
+def my_linregress_model(train_X, train_Y):
+    #uses the stats.linregress library to confirm calculations for r and R^2 and find b0.
+    #calculates R^2 through residuals 
+    
+    x = train_X
+    y = train_Y
+    y_mean = np.mean(y)
+
+    #find r by hand
+    r, length = find_r(x, y)
+
+    #find b1 by hand
+    b1 = find_slope(x, y)
+
+    _, b0, _, _, _ = stats.linregress(x,y)
+
+    model = [((min(x),max(x) ),(min(x)*b1+b0, max(x)*b1+b0)), b1, b0]
+
+    return model
+
+
+def test_model(model, test_x, test_y, x_col):
+    #Compute residuals
+    SSE_lst = []
+    SSE = 0
+    SSTO = 0
+    y_mean = np.mean(test_y)
+    
+    for i in range(len(test_x)): 
+        #Finds SSE by finding the difference between each test y value and the expected y value to find the remaining error with the adjusted line
+        
+        temp_y = model[1]*test_x.iloc[i]+model[2] #finds expected y value
+        residual_E = temp_y-test_y.iloc[i] #finds each residuals
+        SSE_lst.append(residual_E) #ads each residual to the list of residuals
+        SSE +=residual_E**2 #ads the squared residuals together to find the sum 
+        
+        #SSTO
+        residual_TO = y_mean-test_y.iloc[i] #finds the difference between each y value and the mean
+        SSTO += residual_TO**2 #sums these values squared together to account for those that are above and below the mean to find the total sum of squares
+
+    
+    residual_r2 = np.abs(SSTO-SSE)/SSTO #equation that find R^2 by substrating the error sum of squares from the total sum of squares
+
+    print("R^2 =", residual_r2)
+    plt.figure(figsize=(12, 5))
+    plt.plot(model[0][0],model[0][1])
+    plt.scatter(test_x, test_y, s=10)
+    plt.xlabel(x_col) 
+    plt.ylabel('sepal length (cm)')
+    plt.legend(["Least Squares Line"])
+    plt.show()
+
+model1 = my_linregress_model(X_train["sepal width (cm)"], y_train)
+
+
+x_col = "petal width (cm)"
+
+test_model(model1, X_test[x_col], y_test, x_col)
