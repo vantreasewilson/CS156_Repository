@@ -1,0 +1,70 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy import stats
+import numpy as np
+
+
+#set up data
+df = pd.read_csv("train.csv")
+
+new = df[['Fare', 'Pclass', 'Survived', "Age"]].copy()
+
+fare = new["Fare"]
+pclass = new["Pclass"]
+survived = new["Survived"]
+
+not_nan_df = new.copy().dropna()
+
+not_nan_df["intercept"] = 1
+
+x0 = not_nan_df["intercept"]
+x1 = not_nan_df["Age"]
+x2 = not_nan_df["Survived"]
+x3 = not_nan_df["Pclass"]
+y = not_nan_df["Fare"]
+
+#y^hat = 126.1781813 x_0  -0.41195316 x_1 + 5.5809687 x_2 - 36.44476058 x_3
+
+X = np.matrix([x0,x1,x2,x3]).transpose()
+Y = np.matrix([not_nan_df["Fare"]]).transpose()
+
+#B coefficents with vector projection
+B = (X.transpose() * X)**(-1)*X.transpose()*Y
+#print(B)
+
+#model evaluation
+#residuals
+e = Y - X*B
+
+#sum of square resideuals
+SSR = ((Y-X*B).transpose() * e)[0,0]
+
+
+
+#plotting
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+ax.scatter(x2, x3, y)
+
+ax.set_xlabel('Survived')
+ax.set_ylabel('Pclass')
+ax.set_zlabel('Fare')
+
+
+#Need to figure out how to add third variable
+x = np.linspace(0, 1, 100)
+y = np.linspace(0, 3, 100)
+
+X, Y = np.meshgrid(x, y)
+
+z = 126.1781813 + 5.5809687*X -36.44476058*Y
+
+# Plot the surface
+ax.plot_surface(x, y, z)
+
+# Set an equal aspect ratio
+#ax.set_aspect('equal')
+
+plt.show()
