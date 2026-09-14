@@ -1,0 +1,40 @@
+
+#titanic linear regression
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy import stats
+
+df = pd.read_csv("train.csv")
+
+#independent = pclass, survived, age
+#dependent = fair
+
+new = df[['Fare', 'Pclass', 'Survived', "Age"]].copy()
+
+fare = new["Fare"]
+pclass = new["Pclass"]
+survived = new["Survived"]
+
+
+#dropped nan values so model would work with age
+not_nan_df = new.copy().dropna()
+fare_not_nan = not_nan_df["Fare"]
+age_not_nan = not_nan_df["Age"]
+
+#change to the values want to predict
+x = age_not_nan
+y = fare_not_nan
+
+slope, intercept, r, p, std_err = stats.linregress(x, y)
+
+def myfunc(x):
+  return slope * x + intercept
+
+mymodel = list(map(myfunc, x))
+  
+print("r^2 =", r**2)
+print("p =", p)
+
+plt.scatter(x, y)
+plt.plot(x, mymodel, color = "red")
+plt.show()
