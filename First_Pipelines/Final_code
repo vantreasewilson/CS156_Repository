@@ -1,0 +1,366 @@
+#Import libraries
+from skimage.io import imread
+from skimage.transform import resize
+
+
+import pandas as pd
+import numpy as np
+import os
+import random
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from collections import Counter
+
+
+#PIXELES ACROSS MODELS
+
+image_sizes = [5, 10, 15, 25, 50, 100]
+
+def test_pixels(model_name, image_sizes):
+    #print(model)
+    n = np.sqrt(len(image_sizes))
+    if int(n) == n:
+        m = int(n)
+    else:
+        m= int(n)+1
+    fig, axes = plt.subplots(nrows=int(n), ncols=m, figsize=(15,10))
+    
+    for image_size, ax in zip(image_sizes, axes.flatten()):
+        #change the input directory to where the files are on your computer
+        input_dir = r"/Users/vantreasewilson/Desktop/atomCodeDocs/Minerva/CS156/First_Pipeline/Language_Data_small"
+        categories = ['Latin_Words', 'Mandarin_Characters']
+        data = []
+        labels = []
+        
+        for category_idx, category in enumerate(categories):
+            for file in os.listdir(os.path.join(input_dir, category)):
+                img_path = os.path.join(input_dir, category, file)
+                #print(img_path)
+        
+                #skip non photo images
+                if file == ".DS_Store" or file == ".ipynb_checkpoints":
+                    continue
+                img = imread(img_path)
+                img = resize(img, (image_size, image_size))
+                data.append(img.flatten())
+                labels.append(category_idx)
+    
+        x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size = 0.15, random_state=32)
+        
+        if model_name == "KNN":
+        # make model
+            
+            model = KNeighborsClassifier(n_neighbors=3)
+        else:
+            model = SVC()
+        model.fit(x_train, y_train)
+        # get score (accuracy) and confusion matrix
+        sc = model.score(x_test, y_test)
+        y_pred = model.predict(x_test)
+        ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax)
+        ax.title.set_text(f"{model_name} Score: {sc}\n image size: {image_size}")
+    
+
+test_pixels("KNN", image_sizes)
+test_pixels("SVM", image_sizes)
+
+
+#see data counts
+#change the input directory to where the files are on your computer
+input_dir = r"/Users/vantreasewilson/Desktop/atomCodeDocs/Minerva/CS156/First_Pipeline/Language_Data_small"
+categories = ['Latin_Words', 'Mandarin_Characters']
+data = []
+labels = []
+img_size = 10
+
+for category_idx, category in enumerate(categories):
+    for file in os.listdir(os.path.join(input_dir, category)):
+        img_path = os.path.join(input_dir, category, file)
+        #print(img_path)
+
+        #skip non photo images
+        if file == ".DS_Store" or file == ".ipynb_checkpoints":
+            continue
+        img = imread(img_path)
+        img = resize(img, (img_size, img_size))
+        data.append(img.flatten())
+        labels.append(category_idx)
+
+image_df = pd.DataFrame(data)
+
+image_df["script"] = labels
+print(f"total n = {len(image_df)}")
+print(f"Latin n = {(image_df['script'] == 0).sum()}")
+print(f"Mandarin n = {(image_df['script'] == 1).sum()}")
+sns.countplot(data = image_df, x = "script")
+
+
+#see updated data counts
+#change the input directory to where the files are on your computer
+input_dir = r"/Users/vantreasewilson/Desktop/atomCodeDocs/Minerva/CS156/First_Pipeline/Language_Data"
+categories = ['Latin_Words', 'Mandarin_Characters']
+data = []
+labels = []
+img_size = 10
+
+for category_idx, category in enumerate(categories):
+    for file in os.listdir(os.path.join(input_dir, category)):
+        img_path = os.path.join(input_dir, category, file)
+        #print(img_path)
+
+        #skip non photo images
+        if file == ".DS_Store" or file == ".ipynb_checkpoints":
+            continue
+        img = imread(img_path)
+        img = resize(img, (img_size, img_size))
+        data.append(img.flatten())
+        labels.append(category_idx)
+
+image_df = pd.DataFrame(data)
+
+image_df["script"] = labels
+print(f"total n = {len(image_df)}")
+print(f"Latin n = {(image_df['script'] == 0).sum()}")
+print(f"Mandarin n = {(image_df['script'] == 1).sum()}")
+sns.countplot(data = image_df, x = "script")
+
+
+#KNN compare Ks
+#adapted from https://drive.google.com/file/d/12nbTuzwcgg4-2JtEmqZFBLQurKql5TLQ/view
+
+def KNN_plots(data, labels, tests):
+    #initialize plots
+    n = np.sqrt(len(rand_st))
+    if int(n) == n:
+        m = int(n)
+    else:
+        m= int(n)+1
+    fig, axes = plt.subplots(nrows=int(n), ncols=m, figsize=(15,10))
+
+    #tests different k values
+    for k, ax in zip(tests, axes.flatten()):
+        
+        # split data using random state + shuffling order
+        x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size = 0.15, shuffle = True, random_state=32)
+        
+        # make model
+        model = KNeighborsClassifier(n_neighbors=k)
+        model.fit(x_train, y_train)
+        
+        # get accuracy and confusion matrix
+        sc = model.score(x_test, y_test)
+        y_pred = model.predict(x_test)
+        ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax)
+        ax.title.set_text(f"Score: {sc}\n k: {k}")
+    
+    plt.tight_layout()
+    plt.show()
+
+k = [1, 3, 5, 7, 13, 21]
+
+KNN_plots(data, labels, k)
+
+
+#KNN comapre from scratch and scikit
+k = 3
+
+x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state = 22)
+
+#initalize model from scikit
+model = KNeighborsClassifier(n_neighbors=k)
+model.fit(x_train, y_train)
+
+#run predictions
+y_pred = model.predict(x_test)
+
+#find and display accuracy and confusion matrix
+score = accuracy_score(y_test, y_pred)
+print(score)
+print(classification_report(y_test, y_pred))
+cm = confusion_matrix(y_test, y_pred)
+ConfusionMatrixDisplay(cm, display_labels=["Latin", "Mandarin"]).plot()
+
+#KNN adapted from https://www.geeksforgeeks.org/machine-learning/k-nearest-neighbours/
+
+#finds Euclidean Distance between two data points
+def euclidean_distance(point1, point2):
+    return np.sqrt(np.sum((np.array(point1) - np.array(point2))**2))
+
+#compares a test point to all the training data and finds the distance between all and then takes the most common label in the k clostest points
+def knn_predict(training_data, training_labels, test_point, k):
+    distances = []
+
+    #find distance between all training data
+    for i in range(len(training_data)):
+        dist = euclidean_distance(test_point, training_data[i])
+        distances.append((dist, training_labels[i]))
+
+    #sorts distances between other points and takes the label of the k closest
+    distances.sort(key=lambda x: x[0])
+    k_nearest_labels = [label for _, label in distances[:k]]
+    return Counter(k_nearest_labels).most_common(1)[0][0]
+
+#used the training data to predict labels for a the set of test data
+def y_predict(training_data, training_labels, test_set, k):
+    y_pred = []
+    for test_point in test_set:
+        y_pred.append(knn_predict(training_data, training_labels, test_point, k))
+    return y_pred
+
+#runs model from scratch and shows results
+y_pred = y_predict(x_train, y_train, x_test, k)
+score = accuracy_score(y_test, y_pred)
+print(score)
+print(classification_report(y_test, y_pred))
+cm = confusion_matrix(y_test, y_pred)
+ConfusionMatrixDisplay(cm, display_labels=["Latin", "Mandarin"]).plot()
+
+
+#SVM comparisons poly and rbf (appendix)
+#adapted from https://www.geeksforgeeks.org/python/rbf-svm-parameters-in-scikit-learn/
+
+#tests different combinations of gamma and C parameters for SVM. 
+#inputs are data, labels and 
+#test_kernel = "rbf" or "poly" depending on what kernel is being tested.
+def test_kernel(data, labels, test_kernel):
+    # load and preprocess the data
+    X = list(data)
+    y = list(labels)
+    
+    
+    # define the parameter grid
+    param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+                  'gamma':[0.0001, 0.001, 0.01, 1, 10, 100, 1000]}
+    
+    # perform grid search
+    svm = SVC(kernel=test_kernel)
+    grid_search = GridSearchCV(svm, 
+                               param_grid, 
+                               cv=3, # number of folds in cross validation  
+                               n_jobs=-1)
+    
+    grid_search.fit(X, y)
+    
+    print(
+        "Kernel: {} \nBest parameters are {} \nScore : {}%".format(
+            test_kernel, grid_search.best_params_, grid_search.best_score_*100)
+    )
+    
+    # Reshape for heatmap
+    scores = grid_search.cv_results_["mean_test_score"].reshape(
+        len(param_grid['gamma']),
+        len(param_grid['C']))
+    
+    # Heatmap
+    sns.heatmap(scores, 
+                cmap = plt.cm.hot,
+                annot= True, 
+                cbar= True, 
+                square=True)
+
+    #plot labels
+    plt.xlabel("gamma")
+    plt.ylabel("C")
+    plt.xticks(np.arange(len(param_grid['gamma'])), param_grid['gamma'], rotation=45)
+    plt.yticks(np.arange(len(param_grid['C'])), param_grid['C'], rotation=0)
+    
+    plt.title("Accuracy for different parameters")
+    plt.show()
+    
+    ## Plot accuracy vs C parameter
+    plt.figure(figsize=(10, 6))
+    plt.title("Accuracy vs C parameter")
+    plt.xlabel("C")
+    plt.ylabel("Accuracy")
+    n = len(param_grid['C'])
+    for i in range(n):
+        plt.plot(param_grid['C'], 
+                 scores[:,i], 
+                 'o-', label='gamma='+str(param_grid['gamma'][i]))
+    
+    plt.legend()
+    plt.xscale('log')
+    plt.show()
+
+#run analysis
+test_kernel(data, labels, "rbf")
+test_kernel(data, labels, "poly")
+
+
+#compares different values for c in the SVM model using the rbf kernel
+def svm_compare_c(x_train, y_train, y_test, test_c):
+
+    #make model
+    svm_model = SVC(kernel = "rbf", C = test_c, gamma = .1)
+    svm_model.fit(x_train, y_train)
+
+    #make predictions
+    y_pred = svm_model.predict(x_test)
+
+    #calculate accuracy and generate output
+    score = accuracy_score(y_test, y_pred)
+    print(f"C = {test_c}")
+    print(score)
+    print(classification_report(y_test, y_pred))
+    cm = confusion_matrix(y_test, y_pred)
+    ConfusionMatrixDisplay(cm, display_labels=["Latin", "Mandarin"]).plot()
+
+
+#train test split of the data for comparing c values so the same data split is compared
+x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, shuffle=True, stratify=labels)
+
+svm_compare_c(x_train, y_train, y_test, 10)
+svm_compare_c(x_train, y_train, y_test, 100)
+
+
+#random forest thresholds 
+
+def RF_plots(data, tests, threshold_or_randst = None):
+    #initialize plots
+    n = np.sqrt(len(tests))
+    if int(n) == n:
+        m = int(n)
+    else:
+        m= int(n)+1
+    fig, axes = plt.subplots(nrows=int(n), ncols=m, figsize=(15,10))
+
+    #takes the list of threshold values and runs the random forest classifier for each one
+    for threshold, ax in zip(tests, axes.flatten()):
+
+        #initalize dataframe
+        image_df = pd.DataFrame(data)
+
+        #replace column values with true or false based on threshold
+        for col in image_df:
+            image_df[col] = image_df[col].apply(lambda x: True if x > threshold else False)
+
+        #training and testing groups
+        x, y = image_df, labels
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=32)
+
+        #initalize model
+        model_rf = RandomForestClassifier(random_state=32)
+        model_rf.fit(x_train, y_train)
+        
+        # get accuracy and confusion matrix
+        sc = model_rf.score(x_test, y_test)
+        y_pred = model_rf.predict(x_test)
+        ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax)
+        ax.title.set_text(f"Score: {sc}\n threshold: {threshold}")
+    
+    plt.tight_layout()
+    plt.show()
+
+thresholds = [.1, .4, .5, .6, .7, .8, .9,.95, 1]
+
+print("thresholds:")
+RF_plots(data, thresholds)
